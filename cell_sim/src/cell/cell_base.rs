@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use bevy_xpbd_2d::components::{Collider, RigidBody};
 
 #[derive(Component)]
 pub struct Cell {
@@ -60,22 +58,5 @@ impl Default for Cell {
             atp_storage: 1.,
             digestion_efficiency: 1.,
         }
-    }
-}
-
-fn bound_circle_pos(pos: &mut Vec3, radius: f32, window: &Window) {
-    let min = radius;
-    let max = Vec2::new(window.width(), window.height()) - radius;
-
-    if pos.x < min {
-        pos.x = min;
-    } else if pos.x > max.x {
-        pos.x = max.x;
-    }
-
-    if pos.y > max.y {
-        pos.y = max.y;
-    } else if pos.y < min {
-        pos.y = min;
     }
 }
