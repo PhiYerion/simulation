@@ -1,7 +1,7 @@
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::{log, prelude::*};
-use bevy_rapier2d::dynamics::{RigidBody, Velocity, Damping};
-use bevy_rapier2d::geometry::{Collider, Restitution, ColliderMassProperties};
+use bevy_rapier2d::dynamics::{Damping, RigidBody, Velocity};
+use bevy_rapier2d::geometry::{Collider, ColliderMassProperties, Restitution};
 use bevy_rapier2d::rapier::dynamics::RigidBodyDamping;
 
 use super::cell_base::Cell;
@@ -33,7 +33,7 @@ impl CellBundle {
             },
             collider: Collider::ball(100.),
             collider_mass_properties: ColliderMassProperties::Density(1.),
-            damping: Damping { 
+            damping: Damping {
                 linear_damping: 1.,
                 angular_damping: 1.,
             },
@@ -47,7 +47,6 @@ impl CellBundle {
 
 pub fn update_cell_mesh(
     cell: &mut Cell,
-    collider: &mut Collider,
     mesh: &mut Mesh2dHandle,
     color: &mut Handle<ColorMaterial>,
     mesh_assets: &mut ResMut<Assets<Mesh>>,
@@ -56,8 +55,6 @@ pub fn update_cell_mesh(
     *mesh = mesh_assets
         .add(shape::Circle::new(cell.size()).into())
         .into();
-    *collider = Collider::ball(cell.size());
-    log::info!("cell size: {}", cell.size());
 
     let r = cell.atp / cell.atp_storage;
     let g = cell.food / cell.food_storage;
@@ -65,7 +62,21 @@ pub fn update_cell_mesh(
     *color = color_assets.add(new_color);
 }
 
-pub fn move_cell(velocity: &mut Velocity, cell: &mut Cell, window: &Window, vel: Vec2) {
+pub fn update_cell_physics(
+    cell: &Cell,
+    collider: &mut Collider,
+    collider_mass_properties: &mut ColliderMassProperties,
+    damping: &mut Damping,
+) {
+    *collider = Collider::ball(cell.size());
+    *collider_mass_properties = ColliderMassProperties::Density(cell.size());
+    *damping = Damping {
+        linear_damping: cell.speed * cell.speed / 4.,
+        angular_damping: cell.speed * cell.speed / 4.,
+    };
+}
+
+pub fn move_cell(velocity: &mut Velocity, cell: &mut Cell, vel: Vec2) {
     const DRAG: Vec2 = Vec2::new(0.5, 0.5);
     cell.velocity += vel * cell.speed;
     velocity.linvel = cell.velocity - DRAG;
