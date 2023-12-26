@@ -5,60 +5,62 @@ use bevy_xpbd_2d::components::{Collider, RigidBody};
 #[derive(Component)]
 pub struct Cell {
     pub speed: f32,
-    pub size: f32,
     pub velocity: Vec2,
+    pub digestion_easiness: f32,
+    pub digestion_efficiency: f32,
+    pub digestion_rate: f32,
+    pub food: f32,
+    pub food_storage: f32,
+    pub food_difficulty: f32,
+    pub atp: f32,
+    pub atp_storage: f32,
+}
+
+impl Cell {
+    pub fn energy_use(&self) -> f32 {
+        let size_cost = self.size() * self.size();
+        let vel_cost = self.velocity.length_squared();
+        let digestion_cost: f32 = if self.food > 0. {
+            self.digestion_rate * self.digestion_easiness * self.digestion_efficiency
+        } else {
+            0.
+        };
+
+        size_cost + vel_cost + digestion_cost
+    }
+
+    pub fn size(&self) -> f32 {
+        self.food_storage
+            + self.atp_storage
+            + self.speed / 4.
+            + self.digestion_easiness / 4.
+            + self.digestion_rate / 4.
+    }
+
+    pub fn update(&mut self, dt: f32) {
+        self.atp -= self.energy_use() * dt;
+        let food_digested_cap = self.food_difficulty / self.digestion_easiness * dt;
+        let food_digested = food_digested_cap.min(self.food * self.digestion_rate * dt);
+        self.food -= food_digested;
+        self.atp += food_digested * self.digestion_rate;
+    }
 }
 
 impl Default for Cell {
     fn default() -> Self {
         Self {
             speed: 1.,
-            size: 50.,
             velocity: Vec2::new(0., 0.),
+            digestion_easiness: 1.,
+            digestion_rate: 1.,
+            food: 1.,
+            food_storage: 1.,
+            food_difficulty: 1.,
+            atp: 1.,
+            atp_storage: 1.,
+            digestion_efficiency: 1.,
         }
     }
-}
-
-#[derive(Bundle)]
-pub struct CellBundle {
-    pub material_mesh_bundle: MaterialMesh2dBundle<ColorMaterial>,
-    pub rigid_body: RigidBody,
-    pub collider: Collider,
-    pub cell: Cell,
-}
-
-impl CellBundle {
-    pub fn new(meshes: &mut Assets<Mesh>, materials: &mut Assets<ColorMaterial>, window_size: Vec2) -> Self {
-        Self {
-            material_mesh_bundle: MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(50.).into()).into(),
-                material: materials.add(ColorMaterial::from(Color::PURPLE)),
-                transform: Transform::from_xyz(window_size.x / 2., window_size.y / 2., 0.),
-                ..default()
-            },
-            rigid_body: RigidBody::Dynamic,
-            collider: Collider::ball(50.),
-            cell: Cell::default(),
-        }
-    }
-}
-
-pub fn grow_cell(
-    cell: &mut Cell,
-    mesh: &mut Mesh2dHandle,
-    mesh_assets: &mut ResMut<Assets<Mesh>>,
-    growth: f32,
-) {
-    cell.size += growth;
-    *mesh = mesh_assets
-        .add(shape::Circle::new(cell.size).into())
-        .into();
-}
-
-pub fn move_cell(transform: &mut Transform, cell: &mut Cell, window: &Window, vel: Vec2) {
-    cell.velocity = (cell.velocity + vel).normalize() * cell.speed;
-    transform.translation += cell.velocity.extend(0.);
-    bound_circle_pos(&mut transform.translation, cell.size, window)
 }
 
 fn bound_circle_pos(pos: &mut Vec3, radius: f32, window: &Window) {
