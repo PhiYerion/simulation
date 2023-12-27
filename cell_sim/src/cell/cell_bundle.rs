@@ -1,8 +1,7 @@
+use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
-use bevy::{log, prelude::*};
 use bevy_rapier2d::dynamics::{Damping, RigidBody, Velocity};
 use bevy_rapier2d::geometry::{Collider, ColliderMassProperties, Restitution};
-use bevy_rapier2d::rapier::dynamics::RigidBodyDamping;
 
 use super::cell_base::Cell;
 
@@ -77,8 +76,7 @@ pub fn update_cell_physics(
 }
 
 pub fn move_cell(velocity: &mut Velocity, cell: &mut Cell, vel: Vec2) {
-    const DRAG: Vec2 = Vec2::new(0.5, 0.5);
     cell.velocity += vel * cell.speed;
-    velocity.linvel = cell.velocity - DRAG;
+    velocity.linvel = cell.velocity;
     velocity.angvel = 0.;
 }

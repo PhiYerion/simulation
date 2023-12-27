@@ -48,16 +48,16 @@ impl Cell {
 impl Default for Cell {
     fn default() -> Self {
         Self {
-            speed: 3.,
+            speed: 1.,
             velocity: Vec2::new(0., 0.),
-            digestion_easiness: 10.,
-            digestion_rate: 10.,
-            food: 10.,
-            food_storage: 10.,
-            food_difficulty: 10.,
-            atp: 10.,
-            atp_storage: 10.,
-            digestion_efficiency: 10.,
+            digestion_easiness: 1.,
+            digestion_rate: 1.,
+            food: 1.,
+            food_storage: 1.,
+            food_difficulty: 1.,
+            atp: 1.,
+            atp_storage: 1.,
+            digestion_efficiency: 1.,
         }
     }
 }
