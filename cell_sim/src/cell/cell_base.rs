@@ -1,30 +1,50 @@
-use bevy::{prelude::*, log};
+use bevy::prelude::*;
 
+/// Structure defining a cell. See [super::cell_bundle::CellBundle] for how the game sees the cell.
+/// Requires [Cell::update] to be called each frame.
+///
+/// The cell is made up of a [Membrane] and [Internal] structure. The [Membrane] is the casing of
+/// the cell and is responsible for interaction with the outside world. For insance, only the
+/// membrane can get food from the environment. The [Internal] structure is the inside of the cell
+/// and is responsible for the cell's internal processes. For instance, the internal structure
+/// can digest food and turn it into energy.
+///
+/// These two structures are made up of [CellComponent]s. these are
+/// physical components in the cell. See their documentation for more information.
 #[derive(Component)]
 pub struct Cell {
+    /// Accelleration the cell can move at
     pub speed: f32,
     pub velocity: Vec2,
-    internal_components: Vec<InternalComponent>,
-    membrane_components: Vec<MembraneComponent>,
+    /// Components that make up the internal structure of the cell
+    internal_components: Vec<CellComponent<Internal>>,
+    /// Components that make up the membrane of the cell
+    membrane_components: Vec<CellComponent<Membrane>>,
     pub membrane: Membrane,
     pub internal: Internal,
 }
 
-pub struct InternalComponent {
+/// A physical component of a [Cell], either in the [Membrane] or [Internal] structure.
+/// [CellComponent::size] represents the space it takes up in either the membrane or internal 
+/// structure. [CellComponent::run] is a function that sohuld be called each frame, potentially
+/// mutating [Membrane] or [Internal].
+pub struct CellComponent<T> {
     pub size: f32,
-    pub run: fn(&mut Internal, f32) -> Option<InternalComponent>,
+    /// Function that should be called each frame. This function takes in [Internal] or [Membrane]
+    /// and returns a [CellComponent] if it needs to update itself. The function will contain the
+    /// state of the [CellComponent].
+    pub run: fn(&mut T, f32) -> Option<CellComponent<T>>,
 }
 
-pub struct MembraneComponent {
-    pub size: f32,
-    pub run: fn(&mut Membrane, f32) -> Option<MembraneComponent>,
-}
-
+/// Structure defining the membrane of a [Cell]. These parameters will be passed into
+/// [Cell]'s [MembraneComponent]s.
 pub struct Membrane {
     pub strength: f32,
     pub permeability: f32,
 }
 
+/// Structure defining the internals of a [Cell]. These parameters will be passed into
+/// [Cell]'s [InternalComponent]s.
 pub struct Internal {
     pub food: f32,
     pub food_storage: f32,
@@ -34,7 +54,7 @@ pub struct Internal {
 }
 
 impl Cell {
-    pub fn energy_use(&self) -> f32 {
+    fn energy_use(&self) -> f32 {
         let size_cost = self.size() * self.size();
         let vel_cost = self.velocity.length_squared();
 
@@ -45,53 +65,32 @@ impl Cell {
         self.internal.food_storage + self.internal.atp_storage + self.speed / 4.
     }
 
+    /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
         self.internal.food += self.internal.food_storage * 10. * dt;
         self.internal.atp -= self.energy_use() * dt;
-        log::info!("food: {}", self.internal.food);
-        log::info!("atp: {}", self.internal.atp);
-        self.run_components(dt);
+        run_components(&mut self.internal_components, &mut self.internal, dt);
+        run_components(&mut self.membrane_components, &mut self.membrane, dt);
     }
+}
 
-    fn run_components(&mut self, dt: f32) {
-        // TODO: abstract this. Getting the types and traits right will require a refactor. If
-        // preformance becomes a concern, we can add an array instead of a vec and use vec as
-        // fallover
+/// Iterates through all the [CellComponent]<T>s and runs them. This will update the
+/// componnents too.
+fn run_components<T>(components: &mut Vec<CellComponent<T>>, state: &mut T, dt: f32) {
+    // Vector of new components to replace if needed. We need this to avoid mutating the vector of
+    // CellComponent while iterating through it.
+    let mut new_components: Vec<(CellComponent<T>, usize)> = Vec::with_capacity(components.len() / 4);
 
-        // INTERNAL
-        let mut new_components: Vec<(InternalComponent, usize)> = Vec::with_capacity(self.internal_components.len() / 4);
-        for (counter, component) in self.internal_components.iter().enumerate() {
-            if let Some(new_component) = (component.run)(&mut self.internal, dt) {
-                new_components.push((new_component, counter))
-            }
-        }
-        for (component, index) in new_components {
-            self.internal_components[index] = component;
-        }
-
-        // MEMBRANE
-        let mut new_components: Vec<(MembraneComponent, usize)> = Vec::with_capacity(self.membrane_components.len() / 4);
-        for (counter, component) in self.membrane_components.iter().enumerate() {
-            if let Some(new_component) = (component.run)(&mut self.membrane, dt) {
-                new_components.push((new_component, counter))
-            }
-        }
-        for (component, index) in new_components {
-            self.membrane_components[index] = component;
+    for (counter, component) in components.iter().enumerate() {
+        // CellComponent::run will return a new CellComponent if it needs to update itself.
+        if let Some(new_component) = (component.run)(state, dt) {
+            new_components.push((new_component, counter))
         }
     }
 
-    pub fn inject_digestor(&mut self) {
-        self.internal_components.push(InternalComponent {
-            size: 1.,
-            run: |internal, dt| {
-                if internal.food > 0. {
-                    internal.food -= 1. * dt;
-                    internal.atp += 1. * dt;
-                }
-                None
-            },
-        });
+    // Replace the old components with the new ones.
+    for (component, index) in new_components {
+        components[index] = component;
     }
 }
 
@@ -100,7 +99,7 @@ impl Default for Cell {
         Self {
             speed: 1.,
             velocity: Vec2::new(0., 0.),
-            internal_components: vec![InternalComponent {
+            internal_components: vec![CellComponent {
                 size: 1.,
                 run: |internal, dt| {
                     if internal.food > 0. {
