@@ -23,7 +23,8 @@ opt-level = 3
 [dependencies]
 # WARNGING: Remove linking feature when releasing
 bevy = { version = "0.12", features = ["dynamic_linking"] }
-bevy_rapier2d = { version = "0.23", features = [] }
+# TODO switch from stable to nightly when packed_simd_2 is switched to packed_simd (issue #456)
+bevy_rapier2d = { version = "0.23", features = ["simd-stable", "parallel"] }
 rand = "0.8.5"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

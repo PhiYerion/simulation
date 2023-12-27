@@ -55,8 +55,8 @@ pub fn update_cell_mesh(
         .add(shape::Circle::new(cell.size()).into())
         .into();
 
-    let r = cell.atp / cell.atp_storage;
-    let g = cell.food / cell.food_storage;
+    let r = cell.internal.atp / cell.internal.atp_storage;
+    let g = cell.internal.food / cell.internal.food_storage;
     let new_color = ColorMaterial::from(Color::rgb(r, g, 0.));
     *color = color_assets.add(new_color);
 }
