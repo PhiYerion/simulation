@@ -1,9 +1,12 @@
-use super::cell_base::Cell;
+use super::cell_base::{Cell, CellComponent, CellData, CellComponentType};
 use super::cell_bundle::{move_cell, update_cell_mesh, update_cell_physics, CellBundle};
+use super::cell_components::{create_polysaccharides_builder, create_proteins_builder, burn_glucose_builder};
+use bevy::log;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use bevy_rapier2d::dynamics::{Damping, Velocity};
 use bevy_rapier2d::geometry::{Collider, ColliderMassProperties};
+use rand::Rng;
 
 type CellZip<'a> = (
         &'a mut Cell,
@@ -60,10 +63,20 @@ pub fn spawn_cell(
 ) {
     let window = window_query.single();
     (0..100).enumerate().for_each(|_| {
+        let mut cell = Cell::default();
+        cell.inject_component(burn_glucose_builder(rand::random(), rand::random()));
+        cell.inject_component(CellComponentType::Internal(CellComponent {
+            size: rand::random(),
+            run: Box::new(move |cell: &mut CellData, dt: f32| {
+                cell.base.glucose += dt * rand::random::<f32>() * 1.;
+                None
+            })
+        }));
         commands.spawn((CellBundle::new(
             &mut meshes,
             &mut materials,
             Vec2::new(window.width(), window.height()),
+            cell,
         ),));
     });
 }

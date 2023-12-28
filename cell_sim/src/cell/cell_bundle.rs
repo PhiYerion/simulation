@@ -22,6 +22,7 @@ impl CellBundle {
         meshes: &mut Assets<Mesh>,
         materials: &mut Assets<ColorMaterial>,
         window_size: Vec2,
+        cell: Cell,
     ) -> Self {
         Self {
             material_mesh_bundle: MaterialMesh2dBundle {
@@ -38,7 +39,7 @@ impl CellBundle {
             },
             resitution: Restitution::coefficient(0.5),
             rigid_body: RigidBody::Dynamic,
-            cell: Cell::default(),
+            cell,
             velocity: Velocity::default(),
         }
     }
@@ -55,8 +56,8 @@ pub fn update_cell_mesh(
         .add(shape::Circle::new(cell.size()).into())
         .into();
 
-    let r = cell.data.atp / cell.data.atp_storage;
-    let g = cell.data.food / cell.data.food_storage;
+    let r = cell.data.base.atp / cell.data.atp_storage;
+    let g = cell.data.base.glucose / cell.data.food_storage;
     let new_color = ColorMaterial::from(Color::rgb(r, g, 0.));
     *color = color_assets.add(new_color);
 }

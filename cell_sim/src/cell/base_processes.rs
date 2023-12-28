@@ -1,3 +1,5 @@
+use bevy::log;
+
 pub struct CellBase {
     pub signal_proteins: Vec<SignalProtein>,
     pub atp: f32,

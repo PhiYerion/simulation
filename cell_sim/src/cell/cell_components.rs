@@ -1,5 +1,5 @@
 use super::base_processes::Polysaccharide;
-use super::cell_base::{CellComponent, CellData};
+use super::cell_base::{CellComponent, CellData, CellComponentType};
 
 fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     // The idea here is that there will be a process that will require a set amount of proteins to
@@ -13,10 +13,10 @@ fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     (speed, efficiency)
 }
 
-pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent {
+pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponentType {
     let (speed, efficiency) = get_speed_efficiency(size, proteins);
 
-    CellComponent {
+    CellComponentType::Internal(CellComponent {
         size,
         run: Box::new(move |cell: &mut CellData, dt: f32| {
             if let Some(polysaccharide) = cell.base.polysaccharides.get_mut(0) {
@@ -32,14 +32,14 @@ pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
 
             None
         })
-    }
+    })
 }
 
 const AMINO_ACID_FROM_GLYCOLYSIS: f32 = 0.1;
-pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponent {
+pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponentType {
     let (speed, efficiency) = get_speed_efficiency(size, proteins);
 
-    CellComponent {
+    CellComponentType::Internal(CellComponent {
         size,
         run: Box::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
@@ -54,14 +54,14 @@ pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponent {
 
             None
         })
-    }
+    })
 }
 
 const POLYSACCHARIDE_ATP_COST: f32 = 0.01;
-pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent {
+pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponentType {
     let (speed, efficiency) = get_speed_efficiency(size, proteins);
 
-    CellComponent {
+    CellComponentType::Internal(CellComponent {
         size,
         run: Box::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
@@ -82,13 +82,13 @@ pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
 
             None
         })
-    }
+    })
 }
 
-pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponent {
+pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponentType {
     let (speed, efficiency) = get_speed_efficiency(size, proteins);
 
-    CellComponent {
+    CellComponentType::Internal(CellComponent {
         size,
         run: Box::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
@@ -102,5 +102,5 @@ pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponent {
 
             None
         })
-    }
+    })
 }

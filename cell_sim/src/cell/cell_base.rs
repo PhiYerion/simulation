@@ -68,7 +68,7 @@ unsafe impl Sync for CellComponent {}
 
 impl Cell {
     pub fn size(&self) -> f32 {
-        self.data.food_storage + self.data.atp_storage + self.speed / 4.
+        self.data.food_storage + self.data.atp_storage + self.speed / 4. + self.data.base.size()
     }
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
