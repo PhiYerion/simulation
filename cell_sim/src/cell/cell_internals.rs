@@ -1,4 +1,4 @@
-pub struct CellBase {
+pub struct CellInternals {
     pub signal_proteins: Vec<SignalProtein>,
     pub atp: f32,
     pub polysaccharides: Vec<Polysaccharide>,
@@ -8,7 +8,7 @@ pub struct CellBase {
     pub amino_acids: f32,
 }
 
-impl Default for CellBase {
+impl Default for CellInternals {
     fn default() -> Self {
         Self {
             signal_proteins: Vec::new(),
@@ -52,7 +52,7 @@ const NUCLEOTIDE_SIZE: f32 = 0.1;
 const AMINO_ACID_SIZE: f32 = 0.1;
 const SIGNAL_PROTEIN_SIZE: f32 = 0.1;
 
-impl CellBase {
+impl CellInternals {
     pub fn size(&self) -> f32 {
         let mut size = 0.;
         for polysaccharide in &self.polysaccharides {

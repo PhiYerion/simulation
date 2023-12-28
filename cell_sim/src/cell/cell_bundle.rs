@@ -73,7 +73,7 @@ pub fn update_cell_physics(
     *collider = Collider::ball(cell.size());
     *collider_mass_properties = ColliderMassProperties::Density(cell.size());
     *damping = Damping {
-        linear_damping: cell.speed * cell.speed / 4.,
-        angular_damping: cell.speed * cell.speed / 4.,
+        linear_damping: cell.data.speed * cell.data.speed / 4.,
+        angular_damping: cell.data.speed * cell.data.speed / 4.,
     };
 }

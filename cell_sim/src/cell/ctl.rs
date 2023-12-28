@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
-use super::cell_base::{Cell, CellComponent, CellComponentType, CellData};
+use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_bundle::{update_cell_mesh, update_cell_physics, CellBundle};
-use super::cell_components::{
-    burn_glucose_builder, create_polysaccharides_builder, create_proteins_builder, flagella_builder,
+use super::cell_components::CellComponent;
+use super::component_instances::{
+    burn_glucose_builder, flagella_builder,
 };
 use bevy::log;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use bevy_rapier2d::dynamics::{Damping, Velocity};
 use bevy_rapier2d::geometry::{Collider, ColliderMassProperties};
-use rand::Rng;
 
 type CellZip<'a> = (
     Entity,
@@ -30,9 +30,7 @@ pub fn update_all_cells(
     time: Res<Time>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut color_assets: ResMut<Assets<ColorMaterial>>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let window = window_query.single();
     for (
         entity,
         mut cell,
@@ -67,7 +65,6 @@ pub fn update_all_cells(
                 ),
             );
         });
-        cell.data.new_cells.clear();
         update_cell_mesh(
             &mut cell,
             &mut mesh,
@@ -82,7 +79,7 @@ pub fn update_all_cells(
             &mut damping,
             &mut velocity,
         );
-        cell.update(time.delta_seconds());
+        cell.update(time.delta_seconds() * 10.);
     }
 }
 
@@ -135,9 +132,8 @@ pub fn spawn_cells(
 ) {
     let window = window_query.single();
     (0..1000).enumerate().for_each(|_| {
-        let mut cell = create_basic_cell();
         spawn_cell(
-            cell,
+            create_basic_cell(),
             &mut commands,
             &mut materials,
             &mut meshes,

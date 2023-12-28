@@ -1,8 +1,8 @@
-use std::sync::Arc;
+use super::cell_components::{CellComponent, run_components};
 
 use bevy::prelude::*;
 
-use super::base_processes::CellBase;
+use super::cell_internals::CellInternals;
 
 /// Structure defining a cell. See [super::cell_bundle::CellBundle] for how the game sees the cell.
 /// Requires [Cell::update] to be called each frame.
@@ -20,8 +20,6 @@ use super::base_processes::CellBase;
 /// mutate themselves. They will weither be in the membrane or internal structure.
 #[derive(Component)]
 pub struct Cell {
-    /// Accelleration the cell can move at
-    pub speed: f32,
     /// Components that make up the internal structure of the cell
     pub internal_components: Vec<CellComponent>,
     /// Components that make up the membrane of the cell
@@ -38,38 +36,16 @@ pub enum CellComponentType {
 /// Represents the data of the cell. This data is seperarate so that it can more freely be mutated
 /// by the [CellComponent]s.
 pub struct CellData {
-    pub base: CellBase,
+    /// Accelleration the cell can move at
+    pub speed: f32,
+    pub base: CellInternals,
     pub velocity: Vec2,
     pub new_cells: Vec<Cell>,
 }
 
-pub type CellComponentFn = Arc<dyn Fn(&mut CellData, f32) -> Option<CellComponent>>;
-/// A physical component of a [Cell], either in the Membrane or Internal structure.
-/// [CellComponent::size] represents the space it takes up in either the membrane or internal
-/// structure. [CellComponent::run] is a function that sohuld be called each frame, potentially
-/// mutating [CellData].
-pub struct CellComponent {
-    pub size: f32,
-    /// Function that should be called each frame. This function takes in [CellData] and a delta
-    /// and returns a [CellComponent] if it needs to update itself. The function will contain the
-    /// state of the [CellComponent].
-    pub run: CellComponentFn,
-}
-
-impl Clone for CellComponent {
-    fn clone(&self) -> Self {
-        Self {
-            size: self.size,
-            run: self.run.clone(),
-        }
-    }
-}
-unsafe impl Send for CellComponent {}
-unsafe impl Sync for CellComponent {}
-
 impl Cell {
     pub fn size(&self) -> f32 {
-        let mut size = self.speed / 4. + self.data.base.size();
+        let mut size = self.data.speed / 4. + self.data.base.size();
         for component in &self.internal_components {
             size += component.size;
         }
@@ -82,8 +58,8 @@ impl Cell {
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
-        run_components(&mut self.internal_components, &mut self.data, 0.1);
-        run_components(&mut self.membrane_components, &mut self.data, 0.1);
+        run_components(&mut self.internal_components, &mut self.data, dt);
+        run_components(&mut self.membrane_components, &mut self.data, dt);
     }
 
     pub fn inject_component(&mut self, component: CellComponentType) {
@@ -98,35 +74,14 @@ impl Cell {
     }
 }
 
-/// Iterates through all the [CellComponent]<T>s and runs them. This will update the
-/// componnents too.
-fn run_components(components: &mut Vec<CellComponent>, state: &mut CellData, dt: f32) {
-    // Vector of new components to replace if needed. We need this to avoid mutating the vector of
-    // CellComponent while iterating through it.
-    let mut new_components: Vec<(CellComponent, usize)> = Vec::with_capacity(components.len() / 4);
-
-    for (counter, component) in components.iter().enumerate() {
-        // CellComponent::run will return a new CellComponent if it needs to update itself.
-        if let Some(new_component) = (component.run)(state, dt) {
-            new_components.push((new_component, counter))
-        }
-    }
-
-    // Replace the old components with the new ones.
-    for (component, index) in new_components {
-        let size_diff = component.size - components[index].size;
-        components[index] = component;
-    }
-}
-
 impl Default for Cell {
     fn default() -> Self {
         Self {
-            speed: 1.,
             internal_components: vec![],
             membrane_components: vec![],
             data: CellData {
-                base: CellBase::default(),
+                speed: 1.,
+                base: CellInternals::default(),
                 velocity: Vec2::new(0., 0.),
                 new_cells: Vec::new(),
             },
