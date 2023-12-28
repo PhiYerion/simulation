@@ -21,7 +21,7 @@ fn main() {
         }))
         .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
         .add_plugins(FrameTimeDiagnosticsPlugin)
-        .add_systems(Startup, cell::spawn_cell)
+        .add_systems(Startup, cell::spawn_cells)
         .add_systems(Startup, spawn_camera)
         .add_systems(Update, update_all_cells)
         .run();

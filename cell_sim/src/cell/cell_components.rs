@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::base_processes::Polysaccharide;
 use super::cell_base::{CellComponent, CellComponentType, CellData};
 use bevy::prelude::*;
@@ -19,14 +21,14 @@ pub fn flagella_builder(size: f32, proteins: f32) -> CellComponentType {
 
     CellComponentType::Membrane(CellComponent {
         size,
-        run: Box::new(move |cell: &mut CellData, dt: f32| {
+        run: Arc::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
 
             if cell.base.atp < amount * amount {
                 amount = cell.base.atp / amount;
             }
 
-            cell.base.atp -= amount * amount;
+            cell.base.atp -= amount * amount * cell.base.size() / 200.;
 
             let direction = rand::random::<f32>();
             let negative = rand::random::<bool>();
@@ -35,7 +37,7 @@ pub fn flagella_builder(size: f32, proteins: f32) -> CellComponentType {
             }
             cell.velocity += Vec2 {
                 x: amount * efficiency * direction,
-                y: amount * efficiency * (1. - direction)
+                y: amount * efficiency * (1. - direction),
             };
 
             None
@@ -48,7 +50,7 @@ pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
 
     CellComponentType::Internal(CellComponent {
         size,
-        run: Box::new(move |cell: &mut CellData, dt: f32| {
+        run: Arc::new(move |cell: &mut CellData, dt: f32| {
             if let Some(polysaccharide) = cell.base.polysaccharides.get_mut(0) {
                 let amount = dt * speed;
                 if amount < polysaccharide.amount {
@@ -71,7 +73,7 @@ pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponentType {
 
     CellComponentType::Internal(CellComponent {
         size,
-        run: Box::new(move |cell: &mut CellData, dt: f32| {
+        run: Arc::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
 
             if cell.base.glucose < amount {
@@ -93,7 +95,7 @@ pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
 
     CellComponentType::Internal(CellComponent {
         size,
-        run: Box::new(move |cell: &mut CellData, dt: f32| {
+        run: Arc::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
 
             if cell.base.glucose < amount {
@@ -120,7 +122,7 @@ pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponentType {
 
     CellComponentType::Internal(CellComponent {
         size,
-        run: Box::new(move |cell: &mut CellData, dt: f32| {
+        run: Arc::new(move |cell: &mut CellData, dt: f32| {
             let mut amount = dt * speed;
 
             if cell.base.amino_acids < amount {

@@ -21,18 +21,17 @@ impl CellBundle {
     pub fn new(
         meshes: &mut Assets<Mesh>,
         materials: &mut Assets<ColorMaterial>,
-        window_size: Vec2,
         cell: Cell,
         pos: Vec3,
     ) -> Self {
         Self {
             material_mesh_bundle: MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(100.).into()).into(),
+                mesh: meshes.add(shape::Circle::new(cell.size()).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
                 transform: Transform::from_xyz(pos.x, pos.y, 0.),
                 ..default()
             },
-            collider: Collider::ball(100.),
+            collider: Collider::ball(cell.size()),
             collider_mass_properties: ColliderMassProperties::Density(1.),
             damping: Damping {
                 linear_damping: 1.,

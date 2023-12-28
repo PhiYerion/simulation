@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 
 use super::base_processes::CellBase;
@@ -21,9 +23,9 @@ pub struct Cell {
     /// Accelleration the cell can move at
     pub speed: f32,
     /// Components that make up the internal structure of the cell
-    internal_components: Vec<CellComponent>,
+    pub internal_components: Vec<CellComponent>,
     /// Components that make up the membrane of the cell
-    membrane_components: Vec<CellComponent>,
+    pub membrane_components: Vec<CellComponent>,
     pub data: CellData,
 }
 
@@ -38,9 +40,10 @@ pub enum CellComponentType {
 pub struct CellData {
     pub base: CellBase,
     pub velocity: Vec2,
+    pub new_cells: Vec<Cell>,
 }
 
-pub type CellComponentFn = Box<dyn Fn(&mut CellData, f32) -> Option<CellComponent>>;
+pub type CellComponentFn = Arc<dyn Fn(&mut CellData, f32) -> Option<CellComponent>>;
 /// A physical component of a [Cell], either in the Membrane or Internal structure.
 /// [CellComponent::size] represents the space it takes up in either the membrane or internal
 /// structure. [CellComponent::run] is a function that sohuld be called each frame, potentially
@@ -53,6 +56,14 @@ pub struct CellComponent {
     pub run: CellComponentFn,
 }
 
+impl Clone for CellComponent {
+    fn clone(&self) -> Self {
+        Self {
+            size: self.size,
+            run: self.run.clone(),
+        }
+    }
+}
 unsafe impl Send for CellComponent {}
 unsafe impl Sync for CellComponent {}
 
@@ -71,8 +82,8 @@ impl Cell {
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
-        run_components(&mut self.internal_components, &mut self.data, dt);
-        run_components(&mut self.membrane_components, &mut self.data, dt);
+        run_components(&mut self.internal_components, &mut self.data, 0.1);
+        run_components(&mut self.membrane_components, &mut self.data, 0.1);
     }
 
     pub fn inject_component(&mut self, component: CellComponentType) {
@@ -117,6 +128,7 @@ impl Default for Cell {
             data: CellData {
                 base: CellBase::default(),
                 velocity: Vec2::new(0., 0.),
+                new_cells: Vec::new(),
             },
         }
     }
