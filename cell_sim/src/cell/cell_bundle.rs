@@ -23,12 +23,13 @@ impl CellBundle {
         materials: &mut Assets<ColorMaterial>,
         window_size: Vec2,
         cell: Cell,
+        pos: Vec3,
     ) -> Self {
         Self {
             material_mesh_bundle: MaterialMesh2dBundle {
                 mesh: meshes.add(shape::Circle::new(100.).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
-                transform: Transform::from_xyz(window_size.x / 2., window_size.y / 2., 0.),
+                transform: Transform::from_xyz(pos.x, pos.y, 0.),
                 ..default()
             },
             collider: Collider::ball(100.),
@@ -56,8 +57,8 @@ pub fn update_cell_mesh(
         .add(shape::Circle::new(cell.size()).into())
         .into();
 
-    let r = cell.data.base.atp / cell.data.atp_storage;
-    let g = cell.data.base.glucose / cell.data.food_storage;
+    let r = cell.data.base.atp;
+    let g = cell.data.base.glucose;
     let new_color = ColorMaterial::from(Color::rgb(r, g, 0.));
     *color = color_assets.add(new_color);
 }

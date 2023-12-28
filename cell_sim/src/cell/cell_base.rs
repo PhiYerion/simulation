@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bevy::prelude::*;
+use bevy::{log, prelude::*};
 
 use super::base_processes::CellBase;
 
@@ -39,14 +39,6 @@ pub enum CellComponentType {
 /// Represents the data of the cell. This data is seperarate so that it can more freely be mutated
 /// by the [CellComponent]s.
 pub struct CellData {
-    pub size: f32,
-    pub membrane_strength: f32,
-    pub membrane_permeability: f32,
-    pub food: f32,
-    pub food_storage: f32,
-    pub food_difficulty: f32,
-    pub atp: f32,
-    pub atp_storage: f32,
     pub base: CellBase,
 }
 
@@ -68,11 +60,20 @@ unsafe impl Sync for CellComponent {}
 
 impl Cell {
     pub fn size(&self) -> f32 {
-        self.data.food_storage + self.data.atp_storage + self.speed / 4. + self.data.base.size()
+        let mut size = self.speed / 4. + self.data.base.size();
+        for component in &self.internal_components {
+            size += component.size;
+        }
+        for component in &self.membrane_components {
+            size += component.size;
+        }
+
+        size
     }
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
+        self.data.base.atp -= dt * self.size() * self.velocity.length_squared();
         run_components(&mut self.internal_components, &mut self.data, dt);
         run_components(&mut self.membrane_components, &mut self.data, dt);
     }
@@ -80,11 +81,9 @@ impl Cell {
     pub fn inject_component(&mut self, component: CellComponentType) {
         match component {
             CellComponentType::Internal(component) => {
-                self.data.size += component.size;
                 self.internal_components.push(component);
             }
             CellComponentType::Membrane(component) => {
-                self.data.size += component.size;
                 self.membrane_components.push(component);
             }
         }
@@ -108,7 +107,6 @@ fn run_components(components: &mut Vec<CellComponent>, state: &mut CellData, dt:
     // Replace the old components with the new ones.
     for (component, index) in new_components {
         let size_diff = component.size - components[index].size;
-        state.size += size_diff;
         components[index] = component;
     }
 }
@@ -121,14 +119,6 @@ impl Default for Cell {
             internal_components: vec![],
             membrane_components: vec![],
             data: CellData {
-                size: 0.,
-                membrane_strength: 1.,
-                membrane_permeability: 1.,
-                food: 0.,
-                food_storage: 0.,
-                food_difficulty: 1.,
-                atp: 0.,
-                atp_storage: 0.,
                 base: CellBase::default(),
             },
         }

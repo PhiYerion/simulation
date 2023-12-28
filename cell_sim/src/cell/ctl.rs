@@ -1,6 +1,8 @@
-use super::cell_base::{Cell, CellComponent, CellData, CellComponentType};
+use super::cell_base::{Cell, CellComponent, CellComponentType, CellData};
 use super::cell_bundle::{move_cell, update_cell_mesh, update_cell_physics, CellBundle};
-use super::cell_components::{create_polysaccharides_builder, create_proteins_builder, burn_glucose_builder};
+use super::cell_components::{
+    burn_glucose_builder, create_polysaccharides_builder, create_proteins_builder,
+};
 use bevy::log;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
@@ -9,13 +11,13 @@ use bevy_rapier2d::geometry::{Collider, ColliderMassProperties};
 use rand::Rng;
 
 type CellZip<'a> = (
-        &'a mut Cell,
-        &'a mut Collider,
-        &'a mut Velocity,
-        &'a mut Mesh2dHandle,
-        &'a mut Handle<ColorMaterial>,
-        &'a mut ColliderMassProperties,
-        &'a mut Damping,
+    &'a mut Cell,
+    &'a mut Collider,
+    &'a mut Velocity,
+    &'a mut Mesh2dHandle,
+    &'a mut Handle<ColorMaterial>,
+    &'a mut ColliderMassProperties,
+    &'a mut Damping,
 );
 
 pub fn update_all_cells(
@@ -59,10 +61,11 @@ pub fn spawn_cell(
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    time: Res<Time>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = window_query.single();
-    (0..100).enumerate().for_each(|_| {
+    (0..2000).enumerate().for_each(|_| {
         let mut cell = Cell::default();
         cell.inject_component(burn_glucose_builder(rand::random(), rand::random()));
         cell.inject_component(CellComponentType::Internal(CellComponent {
@@ -70,13 +73,18 @@ pub fn spawn_cell(
             run: Box::new(move |cell: &mut CellData, dt: f32| {
                 cell.base.glucose += dt * rand::random::<f32>() * 1.;
                 None
-            })
+            }),
         }));
         commands.spawn((CellBundle::new(
             &mut meshes,
             &mut materials,
             Vec2::new(window.width(), window.height()),
             cell,
+            Vec3::new(
+                rand::random::<f32>() * window.width(),
+                rand::random::<f32>() * window.height(),
+                0.,
+            ),
         ),));
     });
 }

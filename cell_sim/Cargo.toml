@@ -1,3 +1,5 @@
+cargo-features = ["profile-rustflags"]
+
 [package]
 name = "cell_sim"
 version = "0.1.0"
@@ -5,12 +7,14 @@ edition = "2021"
 
 [profile.release]
 opt-level = 3
-lto = true
-debug = false
-debug-assertions = false
-codegen-units = 1
-panic = "abort"
-overflow-checks = false
+rustflags = ["-C", "target-cpu=native"]
+
+#[profile.crazy]
+#opt-level = 3
+#lto = "fat"
+#debug = false
+#debug-assertions = false
+#overflow-checks = false
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]
@@ -22,7 +26,8 @@ opt-level = 3
 
 [dependencies]
 # WARNGING: Remove linking feature when releasing
-bevy = { version = "0.12", features = ["dynamic_linking"] }
+bevy = { version = "0.12", "dynamic_linking"] }
+#bevy = "*"
 # TODO switch from stable to nightly when packed_simd_2 is switched to packed_simd (issue #456)
 bevy_rapier2d = { version = "0.23", features = ["simd-stable", "parallel"] }
 rand = "0.8.5"
