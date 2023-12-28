@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
+
+use super::base_processes::CellBase;
 
 /// Structure defining a cell. See [super::cell_bundle::CellBundle] for how the game sees the cell.
 /// Requires [Cell::update] to be called each frame.
@@ -35,6 +39,7 @@ pub enum CellComponentType {
 /// Represents the data of the cell. This data is seperarate so that it can more freely be mutated
 /// by the [CellComponent]s.
 pub struct CellData {
+    pub size: f32,
     pub membrane_strength: f32,
     pub membrane_permeability: f32,
     pub food: f32,
@@ -42,7 +47,10 @@ pub struct CellData {
     pub food_difficulty: f32,
     pub atp: f32,
     pub atp_storage: f32,
+    pub base: CellBase,
 }
+
+pub type CellComponentFn = Box<dyn Fn(&mut CellData, f32) -> Option<CellComponent>>;
 /// A physical component of a [Cell], either in the Membrane or Internal structure.
 /// [CellComponent::size] represents the space it takes up in either the membrane or internal
 /// structure. [CellComponent::run] is a function that sohuld be called each frame, potentially
@@ -52,27 +60,34 @@ pub struct CellComponent {
     /// Function that should be called each frame. This function takes in [CellData] and a delta
     /// and returns a [CellComponent] if it needs to update itself. The function will contain the
     /// state of the [CellComponent].
-    pub run: fn(&mut CellData, f32) -> Option<CellComponent>,
+    pub run: CellComponentFn,
 }
 
+unsafe impl Send for CellComponent {}
+unsafe impl Sync for CellComponent {}
+
 impl Cell {
-    fn energy_use(&self) -> f32 {
-        let size_cost = self.size() * self.size();
-        let vel_cost = self.velocity.length_squared();
-
-        size_cost + vel_cost
-    }
-
     pub fn size(&self) -> f32 {
         self.data.food_storage + self.data.atp_storage + self.speed / 4.
     }
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
-        self.data.food += self.data.food_storage * 10. * dt;
-        self.data.atp -= self.energy_use() * dt;
         run_components(&mut self.internal_components, &mut self.data, dt);
         run_components(&mut self.membrane_components, &mut self.data, dt);
+    }
+
+    pub fn inject_component(&mut self, component: CellComponentType) {
+        match component {
+            CellComponentType::Internal(component) => {
+                self.data.size += component.size;
+                self.internal_components.push(component);
+            }
+            CellComponentType::Membrane(component) => {
+                self.data.size += component.size;
+                self.membrane_components.push(component);
+            }
+        }
     }
 }
 
@@ -92,6 +107,8 @@ fn run_components(components: &mut Vec<CellComponent>, state: &mut CellData, dt:
 
     // Replace the old components with the new ones.
     for (component, index) in new_components {
+        let size_diff = component.size - components[index].size;
+        state.size += size_diff;
         components[index] = component;
     }
 }
@@ -101,25 +118,18 @@ impl Default for Cell {
         Self {
             speed: 1.,
             velocity: Vec2::new(0., 0.),
-            internal_components: vec![CellComponent {
-                size: 1.,
-                run: |internal, dt| {
-                    if internal.food > 0. {
-                        internal.food -= 100. * dt;
-                        internal.atp += 100. * dt;
-                    }
-                    None
-                },
-            }],
+            internal_components: vec![],
             membrane_components: vec![],
             data: CellData {
+                size: 0.,
                 membrane_strength: 1.,
                 membrane_permeability: 1.,
                 food: 0.,
-                food_storage: 1.,
+                food_storage: 0.,
                 food_difficulty: 1.,
                 atp: 0.,
-                atp_storage: 1.,
+                atp_storage: 0.,
+                base: CellBase::default(),
             },
         }
     }
