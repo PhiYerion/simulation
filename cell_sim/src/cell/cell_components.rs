@@ -1,5 +1,6 @@
 use super::base_processes::Polysaccharide;
-use super::cell_base::{CellComponent, CellData, CellComponentType};
+use super::cell_base::{CellComponent, CellComponentType, CellData};
+use bevy::prelude::*;
 
 fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     // The idea here is that there will be a process that will require a set amount of proteins to
@@ -11,6 +12,35 @@ fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     let speed = size;
 
     (speed, efficiency)
+}
+
+pub fn flagella_builder(size: f32, proteins: f32) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+
+    CellComponentType::Membrane(CellComponent {
+        size,
+        run: Box::new(move |cell: &mut CellData, dt: f32| {
+            let mut amount = dt * speed;
+
+            if cell.base.atp < amount * amount {
+                amount = cell.base.atp / amount;
+            }
+
+            cell.base.atp -= amount * amount;
+
+            let direction = rand::random::<f32>();
+            let negative = rand::random::<bool>();
+            if negative {
+                amount = -amount;
+            }
+            cell.velocity += Vec2 {
+                x: amount * efficiency * direction,
+                y: amount * efficiency * (1. - direction)
+            };
+
+            None
+        }),
+    })
 }
 
 pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponentType {
@@ -31,7 +61,7 @@ pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
             }
 
             None
-        })
+        }),
     })
 }
 
@@ -53,7 +83,7 @@ pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponentType {
             cell.base.amino_acids += amount * AMINO_ACID_FROM_GLYCOLYSIS;
 
             None
-        })
+        }),
     })
 }
 
@@ -81,7 +111,7 @@ pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
             });
 
             None
-        })
+        }),
     })
 }
 
@@ -101,6 +131,6 @@ pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponentType {
             cell.base.proteins += amount * efficiency;
 
             None
-        })
+        }),
     })
 }

@@ -68,17 +68,13 @@ pub fn update_cell_physics(
     collider: &mut Collider,
     collider_mass_properties: &mut ColliderMassProperties,
     damping: &mut Damping,
+    velocity: &mut Velocity,
 ) {
+    velocity.linvel = cell.data.velocity;
     *collider = Collider::ball(cell.size());
     *collider_mass_properties = ColliderMassProperties::Density(cell.size());
     *damping = Damping {
         linear_damping: cell.speed * cell.speed / 4.,
         angular_damping: cell.speed * cell.speed / 4.,
     };
-}
-
-pub fn move_cell(velocity: &mut Velocity, cell: &mut Cell, vel: Vec2) {
-    cell.velocity += vel * cell.speed;
-    velocity.linvel = cell.velocity;
-    velocity.angvel = 0.;
 }

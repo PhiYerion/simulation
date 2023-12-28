@@ -1,4 +1,4 @@
-cargo-features = ["profile-rustflags"]
+#cargo-features = ["profile-rustflags"]
 
 [package]
 name = "cell_sim"
@@ -7,7 +7,7 @@ edition = "2021"
 
 [profile.release]
 opt-level = 3
-rustflags = ["-C", "target-cpu=native"]
+#rustflags = ["-C", "target-cpu=native"]
 
 #[profile.crazy]
 #opt-level = 3
@@ -26,10 +26,10 @@ opt-level = 3
 
 [dependencies]
 # WARNGING: Remove linking feature when releasing
-bevy = { version = "0.12", "dynamic_linking"] }
-#bevy = "*"
+#bevy = { version = "*", features = ["multi-threaded", "dynamic_linking"] }
+bevy = {version ="*", features = ["multi-threaded"] }
 # TODO switch from stable to nightly when packed_simd_2 is switched to packed_simd (issue #456)
-bevy_rapier2d = { version = "0.23", features = ["simd-stable", "parallel"] }
-rand = "0.8.5"
+bevy_rapier2d = { version = "*", features = ["simd-stable", "parallel"] }
+rand = "*"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

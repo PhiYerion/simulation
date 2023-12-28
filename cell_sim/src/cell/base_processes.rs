@@ -1,5 +1,3 @@
-use bevy::log;
-
 pub struct CellBase {
     pub signal_proteins: Vec<SignalProtein>,
     pub atp: f32,
@@ -14,7 +12,7 @@ impl Default for CellBase {
     fn default() -> Self {
         Self {
             signal_proteins: Vec::new(),
-            atp: 0.,
+            atp: 1.,
             polysaccharides: Vec::new(),
             glucose: 0.,
             proteins: 0.,

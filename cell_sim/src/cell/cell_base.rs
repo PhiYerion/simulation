@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use bevy::{log, prelude::*};
+use bevy::prelude::*;
 
 use super::base_processes::CellBase;
 
@@ -22,7 +20,6 @@ use super::base_processes::CellBase;
 pub struct Cell {
     /// Accelleration the cell can move at
     pub speed: f32,
-    pub velocity: Vec2,
     /// Components that make up the internal structure of the cell
     internal_components: Vec<CellComponent>,
     /// Components that make up the membrane of the cell
@@ -40,6 +37,7 @@ pub enum CellComponentType {
 /// by the [CellComponent]s.
 pub struct CellData {
     pub base: CellBase,
+    pub velocity: Vec2,
 }
 
 pub type CellComponentFn = Box<dyn Fn(&mut CellData, f32) -> Option<CellComponent>>;
@@ -73,7 +71,6 @@ impl Cell {
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
-        self.data.base.atp -= dt * self.size() * self.velocity.length_squared();
         run_components(&mut self.internal_components, &mut self.data, dt);
         run_components(&mut self.membrane_components, &mut self.data, dt);
     }
@@ -115,11 +112,11 @@ impl Default for Cell {
     fn default() -> Self {
         Self {
             speed: 1.,
-            velocity: Vec2::new(0., 0.),
             internal_components: vec![],
             membrane_components: vec![],
             data: CellData {
                 base: CellBase::default(),
+                velocity: Vec2::new(0., 0.),
             },
         }
     }
