@@ -51,7 +51,7 @@ pub fn flagella_builder(props: ComponentBuilderProps) -> CellComponentType {
                 y: amount * efficiency * (1. - direction),
             };
 
-            None
+            (None, None)
         }),
     })
 }
@@ -73,7 +73,7 @@ pub fn reduce_polysaccharides_builder(props: ComponentBuilderProps) -> CellCompo
                 }
             }
 
-            None
+            (None, None)
         }),
     })
 }
@@ -95,7 +95,7 @@ pub fn burn_glucose_builder(props: ComponentBuilderProps) -> CellComponentType {
             cell.base.atp += amount * efficiency;
             cell.base.amino_acids += amount * AMINO_ACID_FROM_GLYCOLYSIS;
 
-            None
+            (None, None)
         }),
     })
 }
@@ -123,7 +123,7 @@ pub fn create_polysaccharides_builder(props: ComponentBuilderProps) -> CellCompo
                 amount: amount * efficiency,
             });
 
-            None
+            (None, None)
         }),
     })
 }
@@ -143,7 +143,7 @@ pub fn create_proteins_builder(props: ComponentBuilderProps) -> CellComponentTyp
             cell.base.amino_acids -= amount;
             cell.base.proteins += amount * efficiency;
 
-            None
+            (None, None)
         }),
     })
 }

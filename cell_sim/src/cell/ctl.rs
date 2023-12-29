@@ -105,7 +105,7 @@ fn create_basic_cell() -> Cell {
                 data.new_cells.push(new_cell);
             }
 
-            None
+            (None, None)
         }),
     }));
 
