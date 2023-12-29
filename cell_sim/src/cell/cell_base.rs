@@ -41,6 +41,7 @@ pub struct CellData {
     pub base: CellInternals,
     pub velocity: Vec2,
     pub new_cells: Vec<Cell>,
+    pub size: f32,
 }
 
 impl Cell {
@@ -60,6 +61,7 @@ impl Cell {
     pub fn update(&mut self, dt: f32) {
         run_components(&mut self.internal_components, &mut self.data, dt);
         run_components(&mut self.membrane_components, &mut self.data, dt);
+        self.data.size = self.size();
     }
 
     pub fn inject_component(&mut self, component: CellComponentType) {
@@ -80,6 +82,7 @@ impl Default for Cell {
             internal_components: vec![],
             membrane_components: vec![],
             data: CellData {
+                size: 1.,
                 speed: 1.,
                 base: CellInternals::default(),
                 velocity: Vec2::new(0., 0.),

@@ -12,8 +12,8 @@ impl Default for CellInternals {
     fn default() -> Self {
         Self {
             signal_proteins: Vec::new(),
-            atp: 1.,
             polysaccharides: Vec::new(),
+            atp: 1.,
             glucose: 0.,
             proteins: 0.,
             nucleotides: 0.,
@@ -25,7 +25,6 @@ impl Default for CellInternals {
 /// [SignalProtein]s are signals passed to [super::cell_base::CellComponent]s. Whether or not these
 /// are used is up to the component.
 pub struct SignalProtein {
-    pub signal: usize,
     amount: f32,
 }
 

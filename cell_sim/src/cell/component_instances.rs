@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use super::cell_internals::Polysaccharide;
-use super::cell_base::{CellComponentType, CellData};
+use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_components::CellComponent;
+use super::cell_internals::{Polysaccharide, SignalProtein};
 use bevy::prelude::*;
 
 fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
@@ -17,13 +17,23 @@ fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     (speed, efficiency)
 }
 
-pub fn flagella_builder(size: f32, proteins: f32) -> CellComponentType {
-    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+fn get_amount(dt: f32, speed: f32, signal_proteins: &[SignalProtein], size: f32, sensitivities: &[(usize, f32)]) -> f32 {
+    let mut sensitivity_modifier: f32 = 1.;
+    sensitivities.iter().for_each(|(index, weight)| {
+        sensitivity_modifier += signal_proteins[*index].strength(size) * weight;
+    });
+    sensitivity_modifier = f32::tanh(sensitivity_modifier);
+
+    dt * speed * sensitivity_modifier
+}
+
+pub fn flagella_builder(props: ComponentBuilderProps) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(props.size, props.proteins);
 
     CellComponentType::Membrane(CellComponent {
-        size,
+        size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let mut amount = dt * speed;
+            let mut amount = get_amount(dt, speed, &cell.base.signal_proteins, cell.size, &props.sensitivities);
 
             if cell.base.atp < amount * amount {
                 amount = cell.base.atp / amount;
@@ -46,14 +56,14 @@ pub fn flagella_builder(size: f32, proteins: f32) -> CellComponentType {
     })
 }
 
-pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponentType {
-    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+pub fn reduce_polysaccharides_builder(props: ComponentBuilderProps) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(props.size, props.proteins);
 
     CellComponentType::Internal(CellComponent {
-        size,
+        size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
             if let Some(polysaccharide) = cell.base.polysaccharides.get_mut(0) {
-                let amount = dt * speed;
+                let amount = get_amount(dt, speed, &cell.base.signal_proteins, cell.size, &props.sensitivities);
                 if amount < polysaccharide.amount {
                     polysaccharide.amount -= amount;
                     cell.base.glucose += amount * polysaccharide.complexity * efficiency;
@@ -69,13 +79,13 @@ pub fn reduce_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
 }
 
 const AMINO_ACID_FROM_GLYCOLYSIS: f32 = 0.1;
-pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponentType {
-    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+pub fn burn_glucose_builder(props: ComponentBuilderProps) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(props.size, props.proteins);
 
     CellComponentType::Internal(CellComponent {
-        size,
+        size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let mut amount = dt * speed;
+            let mut amount = get_amount(dt, speed, &cell.base.signal_proteins, cell.size, &props.sensitivities);
 
             if cell.base.glucose < amount {
                 amount = cell.base.glucose;
@@ -91,13 +101,13 @@ pub fn burn_glucose_builder(size: f32, proteins: f32) -> CellComponentType {
 }
 
 const POLYSACCHARIDE_ATP_COST: f32 = 0.01;
-pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponentType {
-    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+pub fn create_polysaccharides_builder(props: ComponentBuilderProps) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(props.size, props.proteins);
 
     CellComponentType::Internal(CellComponent {
-        size,
+        size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let mut amount = dt * speed;
+            let mut amount = get_amount(dt, speed, &cell.base.signal_proteins, cell.size, &props.sensitivities);
 
             if cell.base.glucose < amount {
                 amount = cell.base.glucose;
@@ -118,13 +128,13 @@ pub fn create_polysaccharides_builder(size: f32, proteins: f32) -> CellComponent
     })
 }
 
-pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponentType {
-    let (speed, efficiency) = get_speed_efficiency(size, proteins);
+pub fn create_proteins_builder(props: ComponentBuilderProps) -> CellComponentType {
+    let (speed, efficiency) = get_speed_efficiency(props.size, props.proteins);
 
     CellComponentType::Internal(CellComponent {
-        size,
+        size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let mut amount = dt * speed;
+            let mut amount = get_amount(dt, speed, &cell.base.signal_proteins, cell.size, &props.sensitivities);
 
             if cell.base.amino_acids < amount {
                 amount = cell.base.amino_acids;
@@ -136,4 +146,36 @@ pub fn create_proteins_builder(size: f32, proteins: f32) -> CellComponentType {
             None
         }),
     })
+}
+
+pub fn register_component_builders() -> Vec<fn(ComponentBuilderProps) -> CellComponentType> {
+    vec![
+        flagella_builder,
+        burn_glucose_builder,
+        create_polysaccharides_builder,
+        create_proteins_builder,
+        reduce_polysaccharides_builder,
+    ]
+}
+
+#[derive(Clone)]
+pub struct ComponentBuilderProps {
+    pub size: f32,
+    pub proteins: f32,
+    pub sensitivities: Vec<(usize, f32)>,
+}
+
+#[allow(clippy::upper_case_acronyms)]
+pub type RNA = Vec<Option<ComponentBuilderProps>>;
+
+pub fn create_cell(rna: RNA) -> Cell {
+    let components = register_component_builders();
+    let mut cell = Cell::default();
+    for (i, strand) in rna.iter().enumerate() {
+        if let Some(props) = strand {
+            cell.inject_component((components[i])(props.clone()));
+        }
+    }
+
+    cell
 }
