@@ -19,4 +19,4 @@ llvm-profdata merge -o /tmp/pgo-data/merged.profdata /tmp/pgo-data
 RUSTFLAGS="-Cprofile-use=/tmp/pgo-data/merged.profdata" \
     rustup run nightly cargo build --release --target=x86_64-unknown-linux-gnu
 
-#upx -9 ./target/x86_64-unknown-linux-gnu/release/cell_sim -o ./target/x86_64-unknown-linux-gnu/release/cell_sim_upx
+upx -9 ./target/x86_64-unknown-linux-gnu/release/cell_sim -o ./target/x86_64-unknown-linux-gnu/release/cell_sim_upx
