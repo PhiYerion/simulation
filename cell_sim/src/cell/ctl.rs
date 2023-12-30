@@ -3,7 +3,8 @@ use std::sync::Arc;
 use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_bundle::{update_cell_mesh, update_cell_physics, CellBundle};
 use super::cell_components::CellComponent;
-use super::component_instances::{burn_glucose_builder, flagella_builder, ComponentBuilderProps};
+use super::component_instances::{burn_glucose_builder, flagella_builder, ComponentBuilderProps, create_cell, create_cell_builder};
+use super::rna::build_rna;
 use super::weights::WeightList;
 use bevy::log;
 use bevy::window::PrimaryWindow;
@@ -95,20 +96,7 @@ fn create_basic_cell() -> Cell {
         weightlist: WeightList::default(),
     }));
 
-    cell.inject_component(CellComponentType::Internal(CellComponent {
-        size: 1.,
-        run: Arc::new(move |data: &mut CellData, dt: f32| {
-            data.base.glucose += 1. * dt;
-            data.base.atp -= data.base.size() * data.base.size() / 200.;
-            if data.base.atp >= 15. {
-                data.base.atp -= 10.;
-                let new_cell = create_basic_cell();
-                data.new_cells.push(new_cell);
-            }
-
-            (None, None)
-        }),
-    }));
+    cell.inject_component(create_cell_builder(ComponentBuilderProps::default()));
 
     cell
 }

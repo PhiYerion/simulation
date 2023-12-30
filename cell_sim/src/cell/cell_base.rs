@@ -1,5 +1,5 @@
 use super::cell_components::{run_components, CellComponent};
-use super::component_instances::RNA;
+use super::component_instances::{RNA, ComponentBuilderProps};
 use super::rna::build_rna;
 use super::weights::{Weight, Sensitivity, WeightList};
 
@@ -45,6 +45,7 @@ pub struct CellData {
     pub velocity: Vec2,
     pub new_cells: Vec<Cell>,
     pub size: f32,
+    pub rna_builder: WeightList,
 }
 
 impl Cell {
@@ -98,7 +99,7 @@ impl Cell {
         }).collect();
         let weightlist = WeightList::new(raw_weightlist);
 
-        build_rna(weightlist, self.size(), &self.data.base.signal_proteins)
+        build_rna(&weightlist, self.size(), &self.data.base.signal_proteins)
     }
 }
 
@@ -113,6 +114,7 @@ impl Default for Cell {
                 base: CellInternals::default(),
                 velocity: Vec2::new(0., 0.),
                 new_cells: Vec::new(),
+                rna_builder: WeightList::default(),
             },
         }
     }

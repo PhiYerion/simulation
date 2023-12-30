@@ -3,6 +3,7 @@ use std::sync::Arc;
 use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_components::CellComponent;
 use super::cell_internals::{Polysaccharide, SignalProtein};
+use super::rna::build_rna;
 use super::weights::WeightList;
 use bevy::prelude::*;
 
@@ -24,7 +25,10 @@ pub fn flagella_builder(props: ComponentBuilderProps) -> CellComponentType {
     CellComponentType::Membrane(CellComponent {
         size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let amount_weight = props.weightlist.get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
+            let amount_weight =
+                props
+                    .weightlist
+                    .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
             let mut amount = amount_weight * dt * speed;
 
             if cell.base.atp < amount * amount {
@@ -55,7 +59,10 @@ pub fn reduce_polysaccharides_builder(props: ComponentBuilderProps) -> CellCompo
         size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
             if let Some(polysaccharide) = cell.base.polysaccharides.get_mut(0) {
-                let amount_weight = props.weightlist.get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
+                let amount_weight =
+                    props
+                        .weightlist
+                        .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
                 let mut amount = amount_weight * dt * speed;
                 if amount < polysaccharide.amount {
                     polysaccharide.amount -= amount;
@@ -78,7 +85,10 @@ pub fn burn_glucose_builder(props: ComponentBuilderProps) -> CellComponentType {
     CellComponentType::Internal(CellComponent {
         size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let amount_weight = props.weightlist.get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
+            let amount_weight =
+                props
+                    .weightlist
+                    .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
             let mut amount = amount_weight * dt * speed;
 
             if cell.base.glucose < amount {
@@ -101,7 +111,10 @@ pub fn create_polysaccharides_builder(props: ComponentBuilderProps) -> CellCompo
     CellComponentType::Internal(CellComponent {
         size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let amount_weight = props.weightlist.get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
+            let amount_weight =
+                props
+                    .weightlist
+                    .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
             let mut amount = amount_weight * dt * speed;
 
             if cell.base.glucose < amount {
@@ -129,7 +142,10 @@ pub fn create_proteins_builder(props: ComponentBuilderProps) -> CellComponentTyp
     CellComponentType::Internal(CellComponent {
         size: props.size,
         run: Arc::new(move |cell: &mut CellData, dt: f32| {
-            let amount_weight = props.weightlist.get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
+            let amount_weight =
+                props
+                    .weightlist
+                    .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
             let mut amount = amount_weight * dt * speed;
 
             if cell.base.amino_acids < amount {
@@ -144,8 +160,30 @@ pub fn create_proteins_builder(props: ComponentBuilderProps) -> CellComponentTyp
     })
 }
 
+pub fn create_cell_builder(props: ComponentBuilderProps) -> CellComponentType {
+    CellComponentType::Internal(CellComponent {
+        size: 1.,
+        run: Arc::new(move |data: &mut CellData, dt: f32| {
+            data.base.glucose += 1. * dt;
+            data.base.atp -= data.base.size() * data.base.size() / 200.;
+            if data.base.atp >= 15. {
+                data.base.atp -= 10.;
+                let new_cell = create_cell(build_rna(
+                    &data.rna_builder,
+                    data.size,
+                    &data.base.signal_proteins,
+                ));
+                data.new_cells.push(new_cell);
+            }
+
+            (None, None)
+        }),
+    })
+}
+
 pub fn register_component_builders() -> Vec<fn(ComponentBuilderProps) -> CellComponentType> {
     vec![
+        create_cell_builder,
         flagella_builder,
         burn_glucose_builder,
         create_polysaccharides_builder,
@@ -159,6 +197,16 @@ pub struct ComponentBuilderProps {
     pub size: f32,
     pub proteins: f32,
     pub weightlist: WeightList,
+}
+
+impl Default for ComponentBuilderProps {
+    fn default() -> Self {
+        Self {
+            size: rand::random::<f32>() * 2.,
+            proteins: rand::random::<f32>() * 2.,
+            weightlist: WeightList::default(),
+        }
+    }
 }
 
 #[allow(clippy::upper_case_acronyms)]

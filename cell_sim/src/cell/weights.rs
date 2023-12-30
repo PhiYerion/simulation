@@ -1,12 +1,14 @@
+use bevy::log;
+
 use super::cell_internals::SignalProtein;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Sensitivity {
     pub index: usize,
     pub weight: f32,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Weight {
     pub index: f32,
     pub range: f32,
@@ -23,11 +25,18 @@ pub struct WeightList {
 impl WeightList {
     pub fn new(mut weights: Vec<Weight>) -> Self {
         weights.sort_by(|a, b| a.index.partial_cmp(&b.index).unwrap());
+        if weights.is_empty() {
+            panic!("WeightList must have at least one weight");
+        }
         Self { weights }
     }
     pub fn append(&mut self, weight: Weight) {
-        if let Ok(index) = self.weights
-            .binary_search_by(|a| a.index.partial_cmp(&weight.index).unwrap()) { self.weights.insert(index, weight) }
+        if let Ok(index) = self
+            .weights
+            .binary_search_by(|a| a.index.partial_cmp(&weight.index).unwrap())
+        {
+            self.weights.insert(index, weight)
+        }
         self.weights.push(weight);
     }
     pub fn extend(&mut self, mut weights: Vec<Weight>) {
@@ -55,7 +64,7 @@ impl WeightList {
                     }
                     None => 0.,
                 };
-                
+
                 f32::tanh(weight.base + sensitivity_magnitude)
             })
             .unwrap_or(0.)
