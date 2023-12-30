@@ -4,6 +4,7 @@ use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_bundle::{update_cell_mesh, update_cell_physics, CellBundle};
 use super::cell_components::CellComponent;
 use super::component_instances::{burn_glucose_builder, flagella_builder, ComponentBuilderProps};
+use super::weights::WeightList;
 use bevy::log;
 use bevy::window::PrimaryWindow;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
@@ -86,12 +87,12 @@ fn create_basic_cell() -> Cell {
     cell.inject_component(burn_glucose_builder(ComponentBuilderProps {
         size: rand::random::<f32>() * 2.,
         proteins: rand::random::<f32>() * 1.,
-        sensitivities: vec![],
+        weightlist: WeightList::default(),
     }));
     cell.inject_component(flagella_builder(ComponentBuilderProps {
         size: rand::random::<f32>(),
         proteins: rand::random::<f32>(),
-        sensitivities: vec![],
+        weightlist: WeightList::default(),
     }));
 
     cell.inject_component(CellComponentType::Internal(CellComponent {
