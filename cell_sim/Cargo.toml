@@ -1,3 +1,5 @@
+#cargo-features = ["profile-rustflags"]
+
 [package]
 name = "cell_sim"
 version = "0.1.0"
@@ -9,6 +11,7 @@ lto = "fat"
 debug = false
 debug-assertions = false
 overflow-checks = false
+#rustflags = ["-C", "target-cpu=native"]
 
 #[profile.crazy]
 #opt-level = 3

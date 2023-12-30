@@ -10,6 +10,12 @@ pub struct CellInternals {
 
 impl Default for CellInternals {
     fn default() -> Self {
+        let mut singal_proteins = Vec::with_capacity(rand::random::<usize>() % 100);
+        for _ in 0..singal_proteins.capacity() {
+            singal_proteins.push(SignalProtein {
+                amount: rand::random::<f32>() * 100.,
+            });
+        }
         Self {
             signal_proteins: Vec::new(),
             polysaccharides: Vec::new(),

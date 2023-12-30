@@ -1,4 +1,7 @@
-use super::cell_components::{CellComponent, run_components};
+use super::cell_components::{run_components, CellComponent};
+use super::component_instances::{RNA, ComponentBuilderProps};
+use super::rna::build_rna;
+use super::weights::{Weight, Sensitivity, WeightList};
 
 use bevy::prelude::*;
 
@@ -42,6 +45,7 @@ pub struct CellData {
     pub velocity: Vec2,
     pub new_cells: Vec<Cell>,
     pub size: f32,
+    pub rna_builder: WeightList,
 }
 
 impl Cell {
@@ -74,6 +78,29 @@ impl Cell {
             }
         }
     }
+
+    pub fn generate_rna(&self) -> RNA {
+        let raw_weightlist = (0..100).map(|_| {
+            let index = rand::random::<f32>() * 100.;
+            let range = rand::random::<f32>() * 100.;
+            let base = rand::random::<f32>() * 100.;
+            let sensitivity = rand::random::<f32>() * 100.;
+            let sensitivity_weight = rand::random::<f32>() * 100.;
+
+            Weight {
+                index,
+                range,
+                base,
+                sensitivity: Sensitivity {
+                    index: sensitivity as usize,
+                    weight: sensitivity_weight,
+                },
+            }
+        }).collect();
+        let weightlist = WeightList::new(raw_weightlist);
+
+        build_rna(&weightlist, self.size(), &self.data.base.signal_proteins)
+    }
 }
 
 impl Default for Cell {
@@ -87,6 +114,7 @@ impl Default for Cell {
                 base: CellInternals::default(),
                 velocity: Vec2::new(0., 0.),
                 new_cells: Vec::new(),
+                rna_builder: WeightList::default(),
             },
         }
     }
