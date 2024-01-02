@@ -126,16 +126,16 @@ impl WeightList {
 
 impl Default for WeightList {
     fn default() -> Self {
-        let weight_size = (rand::random::<f32>() * 100.) as usize + 10;
+        let weight_size = (rand::random::<f32>() * 1000.) as usize + 100;
         let mut weights = Vec::with_capacity(weight_size);
         for _ in 0..weight_size {
             weights.push(Weight {
                 index: rand::random::<f32>() * 100.,
                 range: rand::random::<f32>() * 100.,
-                base: rand::random::<f32>() * 100.,
+                base: rand::random::<f32>() * 1000. - 500.,
                 sensitivity: Sensitivity {
                     index: (rand::random::<f32>() * 100.) as usize,
-                    weight: rand::random::<f32>() * 100.,
+                    weight: rand::random::<f32>() * 1000. - 500.,
                 },
             });
         }

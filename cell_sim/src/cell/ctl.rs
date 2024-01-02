@@ -3,7 +3,9 @@ use std::sync::Arc;
 use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_bundle::{update_cell_mesh, update_cell_physics, CellBundle};
 use super::cell_components::CellComponent;
-use super::component_instances::{burn_glucose_builder, flagella_builder, ComponentBuilderProps, create_cell, create_cell_builder};
+use super::component_instances::{
+    burn_glucose_builder, create_cell, create_cell_builder, flagella_builder, ComponentBuilderProps,
+};
 use super::rna::build_rna;
 use super::weights::WeightList;
 use bevy::log;
@@ -31,6 +33,7 @@ pub fn update_all_cells(
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut color_assets: ResMut<Assets<ColorMaterial>>,
 ) {
+    log::info!("cells: {}", cell_zip.iter().len());
     for (
         entity,
         mut cell,
@@ -47,24 +50,26 @@ pub fn update_all_cells(
             commands.entity(entity).despawn();
             log::info!("Cell {:?} died", entity);
         }
-        let internal_components = cell.internal_components.clone();
-        let membrane_components = cell.membrane_components.clone();
-        cell.data.new_cells.drain(..).for_each(|new_cell| {
-            log::info!("Cell {:?} spawned", entity);
-            let mut new_cell = new_cell;
-            new_cell.internal_components = internal_components.clone();
-            new_cell.membrane_components = membrane_components.clone();
-            spawn_cell(
-                new_cell,
-                &mut commands,
-                &mut color_assets,
-                &mut mesh_assets,
-                Vec2::new(
-                    transform.translation.x + rand::random::<f32>(),
-                    transform.translation.y + rand::random::<f32>(),
-                ),
-            );
-        });
+        let size = cell.size();
+        cell.data
+            .new_cells
+            .drain(..)
+            .enumerate()
+            .for_each(|(i, new_cell)| {
+                let offset =
+                    Vec3::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5, 0.)
+                        .normalize()
+                        * f32::sqrt(size)
+                        * (i + 1) as f32;
+                log::info!("Cell {:?} spawned", entity);
+                spawn_cell(
+                    new_cell,
+                    &mut commands,
+                    &mut color_assets,
+                    &mut mesh_assets,
+                    transform.translation + offset,
+                );
+            });
         update_cell_mesh(
             &mut cell,
             &mut mesh,
@@ -79,26 +84,16 @@ pub fn update_all_cells(
             &mut damping,
             &mut velocity,
         );
-        cell.update(time.delta_seconds());
     }
-}
-
-fn create_basic_cell() -> Cell {
-    let mut cell = Cell::default();
-    cell.inject_component(burn_glucose_builder(ComponentBuilderProps {
-        size: rand::random::<f32>() * 2.,
-        proteins: rand::random::<f32>() * 1.,
-        weightlist: WeightList::default(),
-    }));
-    cell.inject_component(flagella_builder(ComponentBuilderProps {
-        size: rand::random::<f32>(),
-        proteins: rand::random::<f32>(),
-        weightlist: WeightList::default(),
-    }));
-
-    cell.inject_component(create_cell_builder(ComponentBuilderProps::default()));
-
-    cell
+    let a = time.delta().as_millis();
+    cell_zip.par_iter_mut().for_each(|(_, mut cell, ..)| {
+        for _ in 0..(a) {
+            if cell.data.base.atp <= 0.1 {
+                break;
+            }
+            cell.update(0.01);
+        }
+    });
 }
 
 fn spawn_cell(
@@ -106,14 +101,9 @@ fn spawn_cell(
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
     meshes: &mut ResMut<Assets<Mesh>>,
-    position: Vec2,
+    position: Vec3,
 ) {
-    commands.spawn((CellBundle::new(
-        meshes,
-        materials,
-        cell,
-        Vec3::new(position.x, position.y, 0.),
-    ),));
+    commands.spawn((CellBundle::new(meshes, materials, cell, position),));
 }
 
 pub fn spawn_cells(
@@ -123,15 +113,16 @@ pub fn spawn_cells(
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = window_query.single();
-    (0..1000).enumerate().for_each(|_| {
+    (0..500).enumerate().for_each(|_| {
         spawn_cell(
-            create_basic_cell(),
+            create_cell(build_rna(&WeightList::default(), 1., &Vec::new())),
             &mut commands,
             &mut materials,
             &mut meshes,
-            Vec2::new(
+            Vec3::new(
                 rand::random::<f32>() * window.width(),
                 rand::random::<f32>() * window.height(),
+                0.,
             ),
         )
     });

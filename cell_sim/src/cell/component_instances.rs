@@ -3,9 +3,9 @@ use std::sync::Arc;
 use super::cell_base::{Cell, CellComponentType, CellData};
 use super::cell_components::CellComponent;
 use super::cell_internals::{Polysaccharide, SignalProtein};
-use super::rna::build_rna;
+use super::rna::{build_rna, RNA};
 use super::weights::WeightList;
-use bevy::prelude::*;
+use bevy::{log, prelude::*};
 
 fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     // The idea here is that there will be a process that will require a set amount of proteins to
@@ -13,7 +13,7 @@ fn get_speed_efficiency(size: f32, proteins: f32) -> (f32, f32) {
     // the process, assuming one unit of size is one process.
     let ratio = proteins / size;
 
-    let efficiency = ratio / (ratio + 1.);
+    let efficiency = f32::tanh(ratio) * 0.9;
     let speed = size;
 
     (speed, efficiency)
@@ -36,6 +36,7 @@ pub fn flagella_builder(props: ComponentBuilderProps) -> CellComponentType {
             }
 
             cell.base.atp -= amount * amount * cell.base.size() / 200.;
+            cell.base.glucose += amount / 50.;
 
             let direction = rand::random::<f32>();
             let negative = rand::random::<bool>();
@@ -63,7 +64,7 @@ pub fn reduce_polysaccharides_builder(props: ComponentBuilderProps) -> CellCompo
                     props
                         .weightlist
                         .get_split_vals(cell.size, &cell.base.signal_proteins, 1)[0];
-                let mut amount = amount_weight * dt * speed;
+                let amount = amount_weight * dt * speed;
                 if amount < polysaccharide.amount {
                     polysaccharide.amount -= amount;
                     cell.base.glucose += amount * polysaccharide.complexity * efficiency;
@@ -164,15 +165,9 @@ pub fn create_cell_builder(props: ComponentBuilderProps) -> CellComponentType {
     CellComponentType::Internal(CellComponent {
         size: 1.,
         run: Arc::new(move |data: &mut CellData, dt: f32| {
-            data.base.glucose += 1. * dt;
-            data.base.atp -= data.base.size() * data.base.size() / 200.;
             if data.base.atp >= 15. {
                 data.base.atp -= 10.;
-                let new_cell = create_cell(build_rna(
-                    &data.rna_builder,
-                    data.size,
-                    &data.base.signal_proteins,
-                ));
+                let new_cell = create_cell(data.rna.clone());
                 data.new_cells.push(new_cell);
             }
 
@@ -208,9 +203,6 @@ impl Default for ComponentBuilderProps {
         }
     }
 }
-
-#[allow(clippy::upper_case_acronyms)]
-pub type RNA = Vec<Option<ComponentBuilderProps>>;
 
 pub fn create_cell(rna: RNA) -> Cell {
     let components = register_component_builders();

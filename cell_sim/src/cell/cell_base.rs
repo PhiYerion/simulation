@@ -1,9 +1,8 @@
 use super::cell_components::{run_components, CellComponent};
-use super::component_instances::{RNA, ComponentBuilderProps};
-use super::rna::build_rna;
-use super::weights::{Weight, Sensitivity, WeightList};
+use super::rna::{build_rna, RNA};
+use super::weights::WeightList;
 
-use bevy::prelude::*;
+use bevy::{log, prelude::*};
 
 use super::cell_internals::CellInternals;
 
@@ -45,7 +44,7 @@ pub struct CellData {
     pub velocity: Vec2,
     pub new_cells: Vec<Cell>,
     pub size: f32,
-    pub rna_builder: WeightList,
+    pub rna: RNA,
 }
 
 impl Cell {
@@ -58,11 +57,17 @@ impl Cell {
             size += component.size;
         }
 
+        if !size.is_finite() {
+            size = 0.;
+        }
+
         size
     }
 
     /// Update the cell. This will run all the [InternalComponent]s and [MembraneComponent]s.
     pub fn update(&mut self, dt: f32) {
+        self.data.base.glucose += dt * 0.2;
+        self.data.base.atp -= dt * 1.7 - dt * self.size() * 0.4;
         run_components(&mut self.internal_components, &mut self.data, dt);
         run_components(&mut self.membrane_components, &mut self.data, dt);
         self.data.size = self.size();
@@ -78,29 +83,6 @@ impl Cell {
             }
         }
     }
-
-    pub fn generate_rna(&self) -> RNA {
-        let raw_weightlist = (0..100).map(|_| {
-            let index = rand::random::<f32>() * 100.;
-            let range = rand::random::<f32>() * 100.;
-            let base = rand::random::<f32>() * 100.;
-            let sensitivity = rand::random::<f32>() * 100.;
-            let sensitivity_weight = rand::random::<f32>() * 100.;
-
-            Weight {
-                index,
-                range,
-                base,
-                sensitivity: Sensitivity {
-                    index: sensitivity as usize,
-                    weight: sensitivity_weight,
-                },
-            }
-        }).collect();
-        let weightlist = WeightList::new(raw_weightlist);
-
-        build_rna(&weightlist, self.size(), &self.data.base.signal_proteins)
-    }
 }
 
 impl Default for Cell {
@@ -114,7 +96,7 @@ impl Default for Cell {
                 base: CellInternals::default(),
                 velocity: Vec2::new(0., 0.),
                 new_cells: Vec::new(),
-                rna_builder: WeightList::default(),
+                rna: build_rna(&WeightList::default(), 1., &Vec::new()),
             },
         }
     }

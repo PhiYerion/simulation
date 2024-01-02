@@ -7,7 +7,6 @@ edition = "2021"
 
 [profile.release]
 opt-level = 3
-lto = "fat"
 debug = false
 debug-assertions = false
 overflow-checks = false
@@ -32,6 +31,7 @@ opt-level = 3
 # WARNGING: Remove linking feature when releasing
 #bevy = { version = "*", features = ["multi-threaded", "dynamic_linking"] }
 bevy = {version ="*", features = ["multi-threaded"] }
+bevy-fps-counter = "0.3.0"
 # TODO switch from stable to nightly when packed_simd_2 is switched to packed_simd (issue #456)
 bevy_rapier2d = { version = "*", features = ["simd-stable", "parallel"] }
 rand = "*"

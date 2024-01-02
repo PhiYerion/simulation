@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::{log, prelude::*};
 use bevy_rapier2d::dynamics::{Damping, RigidBody, Velocity};
 use bevy_rapier2d::geometry::{Collider, ColliderMassProperties, Restitution};
 
@@ -17,6 +17,8 @@ pub struct CellBundle {
     pub velocity: Velocity,
 }
 
+const CELL_SIZE_MODIFIER: f32 = 0.2;
+
 impl CellBundle {
     pub fn new(
         meshes: &mut Assets<Mesh>,
@@ -26,12 +28,14 @@ impl CellBundle {
     ) -> Self {
         Self {
             material_mesh_bundle: MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(cell.size()).into()).into(),
+                mesh: meshes
+                    .add(shape::Circle::new(cell.size() * CELL_SIZE_MODIFIER).into())
+                    .into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
                 transform: Transform::from_xyz(pos.x, pos.y, 0.),
                 ..default()
             },
-            collider: Collider::ball(cell.size()),
+            collider: Collider::ball(cell.size() * CELL_SIZE_MODIFIER),
             collider_mass_properties: ColliderMassProperties::Density(1.),
             damping: Damping {
                 linear_damping: 1.,
@@ -53,11 +57,11 @@ pub fn update_cell_mesh(
     color_assets: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     *mesh = mesh_assets
-        .add(shape::Circle::new(cell.size()).into())
+        .add(shape::Circle::new(cell.size() * CELL_SIZE_MODIFIER).into())
         .into();
 
-    let r = cell.data.base.atp;
-    let g = cell.data.base.glucose;
+    let r = cell.data.base.atp.min(1.);
+    let g = cell.data.base.glucose.min(1.);
     let new_color = ColorMaterial::from(Color::rgb(r, g, 0.));
     *color = color_assets.add(new_color);
 }
@@ -70,7 +74,7 @@ pub fn update_cell_physics(
     velocity: &mut Velocity,
 ) {
     velocity.linvel = cell.data.velocity;
-    *collider = Collider::ball(cell.size());
+    *collider = Collider::ball(cell.size() * CELL_SIZE_MODIFIER);
     *collider_mass_properties = ColliderMassProperties::Density(cell.size());
     *damping = Damping {
         linear_damping: cell.data.speed * cell.data.speed / 4.,

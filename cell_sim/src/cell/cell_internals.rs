@@ -1,3 +1,5 @@
+use bevy::log;
+
 pub struct CellInternals {
     pub signal_proteins: Vec<SignalProtein>,
     pub atp: f32,
@@ -19,8 +21,8 @@ impl Default for CellInternals {
         Self {
             signal_proteins: Vec::new(),
             polysaccharides: Vec::new(),
-            atp: 1.,
-            glucose: 0.,
+            atp: 5.,
+            glucose: 1.,
             proteins: 0.,
             nucleotides: 0.,
             amino_acids: 0.,
@@ -59,7 +61,7 @@ const SIGNAL_PROTEIN_SIZE: f32 = 0.1;
 
 impl CellInternals {
     pub fn size(&self) -> f32 {
-        let mut size = 0.;
+        let mut size = 0.1;
         for polysaccharide in &self.polysaccharides {
             size += polysaccharide.amount * GLUCOSE_SIZE;
         }
@@ -71,6 +73,10 @@ impl CellInternals {
         size += self.proteins * PROTEIN_SIZE;
         size += self.nucleotides * NUCLEOTIDE_SIZE;
         size += self.amino_acids * AMINO_ACID_SIZE;
+
+        if !size.is_finite() {
+            size = 0.;
+        }
 
         size
     }

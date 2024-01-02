@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_fps_counter::FpsCounterPlugin;
 use bevy_rapier2d::prelude::*;
 mod cell;
 mod scene;
@@ -19,8 +20,8 @@ fn main() {
                 ..Default::default()
             },
         }))
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(FrameTimeDiagnosticsPlugin)
+        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(1000.0))
+        .add_plugins(FpsCounterPlugin)
         .add_systems(Startup, cell::spawn_cells)
         .add_systems(Startup, spawn_camera)
         .add_systems(Update, update_all_cells)
